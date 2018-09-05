@@ -13,15 +13,19 @@ and the best solution for each scheme is given in a single figure.
 close all; clc; clear;
 
 %% Parameter Ranges
+%R = $\rho$, the ratio of investment to decay
 Rrange = 1.05:.01:1.15;%4-2*sqrt(2); %chosen st hotspot region lies within
+%E = $\eta$, the strength of neighborhood effects
 Erange = 0.01:.01:.07;
+%B = $\gamma$, homogeneous rate of investment in amenities
 Brange = 0;
+%A = reaction scaling term (effectively increases domain size)
 Arange = 1:.5:3;
 
 %% Constants
-dt = .5;
-tTotal = 200;      % total time
-S = 1;
+dt = .5; %Temporal step size
+tTotal = 200; %total time
+S = 1; %size of geometry - for effective size calculate A*S
 tests = {'Basic MLE'; 'Changing PDE Geometry'; 'Penalty Term'; 'Spatially Dependent Constants'};
 testWhich = [1 2 3 4];
 
@@ -51,7 +55,7 @@ Amap = data;
 map = map/sum(sum((S/meshSize)^2*map));
 
 
-%% Load Data
+%% Load Data %Data taken from the Data Collection folder
 %{
 Wmap = double(rgb2gray(imread('06-27_chicagoMedPropx2.png')));
 Wmap = Wmap(1:525, 1:675);
@@ -110,6 +114,7 @@ if find(testWhich == 4)
     LSESpatDepn = [WbestLSE AbestLSE];
 end
 %clearvars -except map omega bestModelGeom bestuGeom bestParamGeom besttGeom LSEGeom bestModelPenalty bestuPenalty bestParamPenalty besttPenalty LSEPenalty bestModelSpatDepn bestuSpatDepn bestParamSpatDepn besttSpatDepn LSESpatDepn
+
 %% Plotting
 %%{
 today = datestr(now, 'mm-dd');
@@ -159,6 +164,7 @@ if find(testWhich == 4)
     currSubplot = currSubplot+1;
 end
 
+%data plot
 subplot(1,length(testWhich)+1,currSubplot)
 plotMap = map;
 plotMap(~omega) = NaN;

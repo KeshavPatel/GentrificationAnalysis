@@ -1,3 +1,16 @@
+%% Basic MLE Maximizer - Changing Geometry
+%{
+Author:         Keshav Patel
+Advisor:        Nancy Rodriguez-Bunn
+Last modified:  Keshav Patel
+Date modified:  09/04/2018
+
+This file scans over the parameter space and computes an MLE between the
+solution and a given dataset. This file tests the case where the geometry
+of the space is determined by invalid regions in the data. The best model 
+and parameters are stored as variables at the end of the program.
+%}
+
 %% MLE Initializations
 wealthMaxLogLikeFunc = -Inf;
 amenMaxLogLikeFunc = -Inf;

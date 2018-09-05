@@ -1,3 +1,15 @@
+%% PDE Toolbox Implementation for PDE System
+%{
+Author:         Avishai Halev
+Advisor:        Nancy Rodriguez-Bunn
+Last modified:  Keshav Patel
+Date modified:  09/04/2018
+
+This file implements MATLAB's PDE Toolbox package as a solver for the PDE
+system given in the group. The scripts within this package implement this
+file for each set of variables.
+%}
+
 function [ result ,model,dimensions, oldResult] = continuumSimulation(R,E,B, dt,timeSteps,S,A,initialCondition)
      %% CONTINUUMSIMULATION executes one run of the PDE system through time (timeSteps-1)*dt
      

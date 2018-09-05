@@ -1,3 +1,15 @@
+%% Full MLE Tester
+%{
+Author:         Keshav Patel
+Advisor:        Nancy Rodriguez-Bunn
+last modified:  Keshav Patel
+Date modified:  09/04/2018
+
+This file is the main file for running our various MLE schemes. The
+determination of which tests are run is given by the variable "testWhich",
+and the best solution for each scheme is given in a single figure.
+%}
+
 close all; clc; clear;
 
 %% Parameter Ranges

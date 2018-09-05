@@ -1,3 +1,14 @@
+%% PDE Simulation Tester
+%{
+Author:         Avishai Halev
+Advisor:        Nancy Rodriguez-Bunn
+Last modified:  Keshav Patel
+Date modified:  09/04/2018
+
+This file runs the "continuumSimulation.m" file and plots the solution. A
+movie is saved at completion of the script
+%}
+
 close all
 clearvars -except oldResult pResult
 

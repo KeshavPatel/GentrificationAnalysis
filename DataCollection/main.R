@@ -22,11 +22,11 @@ wealthCutoff = 225900*2 #Set to NA to remove wealth cutoff
 myspan = 5 #number of years to average data over. Use 1, 3, or 5
 myendyearNew = 2010 #Last year over which to average data
 tractCodes= "*"#c(20000:89900, 110000:179900, 190000:259900, 830000:849900) #Set to "*" to include all tracts
-initialLatitude = 42.01251;
+initialLatitude = 41.5;
 initialLongitude = -87.93063;
-horizontalLength = 7; #miles
-verticalLength = 6;
-amenityList = c("food", "parks", "coffee", "music", "nightlife")
+horizontalLength = 10; #miles
+verticalLength = 10;
+amenityList = c("food")#c("food", "parks", "coffee", "music", "nightlife")
 
 #shapefile contains the map of the specified area
 shapefile = getBlockGroup(stateName, countyName, myendyearNew, myspan)
@@ -59,17 +59,17 @@ returnList = yelpDataGET(amenityList, initialLatitude, initialLongitude, vertica
 amenitiesPositions = returnList[[1]]
 finalLatitude = returnList[[2]]
 finalLongitude = returnList[[3]]
-shapefile_adj = shapefile[shapefile$Population>300,]
-amenitiesPolyFrame = toAmenDensityPolyFrame(amenitiesPositions, shapefile_adj)
-amenity_df = geo_join(shapefile_adj, amenitiesPolyFrame, "GEOID", "GEOID")
-amenity_df$amenities = amenity_df$amenities/amenity_df$Population
-amenity_df = amenity_df[!is.na(amenity_df$amenities),]
+#shapefile_adj = shapefile[shapefile$Population>300,]
+#amenitiesPolyFrame = toAmenDensityPolyFrame(amenitiesPositions, shapefile_adj)
+#amenity_df = geo_join(shapefile_adj, amenitiesPolyFrame, "GEOID", "GEOID")
+#amenity_df$amenities = amenity_df$amenities/amenity_df$Population
+#amenity_df = amenity_df[!is.na(amenity_df$amenities),]
 
 cat("Generating Maps. ")
 wealthPositionMap = makePositionMap(wealth_df, initialLatitude, finalLatitude, initialLongitude, finalLongitude, "#0000FF", TRUE)
-amenityPositionMap = makePositionMap(amenitiesPositions, initialLatitude, finalLatitude, initialLongitude, finalLongitude, "#FF0000", TRUE)
+#amenityPositionMap = makePositionMap(amenitiesPositions, initialLatitude, finalLatitude, initialLongitude, finalLongitude, "#FF0000", TRUE)
 wealthDensityMap = makeDensityMap(wealth_df, wealthMeasurement, initialLatitude, finalLatitude, initialLongitude, finalLongitude, "#000000", "#0000FF", TRUE)
-amenityDensityMap = makeDensityMap(amenity_df, "amenities", initialLatitude, finalLatitude, initialLongitude, finalLongitude, "#000000", "#FF0000", TRUE)
+#amenityDensityMap = makeDensityMap(amenity_df, "amenities", initialLatitude, finalLatitude, initialLongitude, finalLongitude, "#000000", "#FF0000", TRUE)
 cat("done\n")
 
 #mypalA = colorNumeric(

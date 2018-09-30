@@ -90,7 +90,7 @@ makePositionMap = function(positions, initLat, finLat, initLng, finLng, circleCo
 {
   mypopupA <- paste0("Lat: ", positions$latitude, "<br>", "Lng: ", positions$longitude)
   mymapA = leaflet(options = leafletOptions(zoomControl = FALSE)) %>% 
-    addCircles(positions$longitude, positions$latitude, weight = 1, radius=10, color=circleColor, stroke = TRUE, fillOpacity = 1, popup = mypopupA) %>% 
+    addCircles(positions$longitude, positions$latitude, weight = 5, radius=10, color=circleColor, stroke = TRUE, fillOpacity = 1, popup = mypopupA) %>% 
     fitBounds(initLng, initLat, finLng, finLat) #setView(-87.69, 41.95, zoom = 12.4)
   if(addLegend)
   {

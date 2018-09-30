@@ -10,7 +10,7 @@ system given in the group. The scripts within this package implement this
 file for each set of variables.
 %}
 
-function [ result ,model,dimensions, oldResult] = continuumSimulation(R,E,B, dt,timeSteps,S,A,initialCondition)
+function [ result ,model,dimensions, oldResult, time] = continuumSimulation(R,E,B, dt,timeSteps,S,A,initialCondition)
      %% CONTINUUMSIMULATION executes one run of the PDE system through time (timeSteps-1)*dt
      
 %      Parameters:
@@ -122,9 +122,19 @@ function [ result ,model,dimensions, oldResult] = continuumSimulation(R,E,B, dt,
     
 
     %% Solve
-    
-    result = solvepde(model,0:dt:((timeSteps-1)*dt));
-    
+    result = NaN;
+    i=1;
+    while i < 10
+        try
+            result = solvepde(model,0:dt:((ceil(timeSteps/i)-1)*dt));
+            time = (ceil(timeSteps/i)-1)*dt;
+            break;
+        catch
+            disp('Could not run to completion. Saving less');
+            i = i+1;
+            disp(i)
+        end
+    end
     
     %% End of main function
 end

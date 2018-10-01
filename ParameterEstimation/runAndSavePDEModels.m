@@ -62,13 +62,11 @@ for Rind = 1:length(Rrange)
                 
                 %% Getting results
                 models{Rind,Eind,Bind,Aind} = model;
-                if ~isnan(result)
-                    us{Rind,Eind,Bind,Aind} = result.NodalSolution;
-                else
+                us{Rind,Eind,Bind,Aind} = result.NodalSolution;
+                if size(sum(result.NodalSolution)) == [1,2,2]
+                    models{Rind,Eind,Bind,Aind} = NaN;
                     us{Rind,Eind,Bind,Aind} = NaN;
                 end
-                %pdeplot(model,'XYData',u(:,1,end),'ColorMap','jet','ColorBar','on');
-                %drawnow
                 
             end
         end

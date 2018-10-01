@@ -27,7 +27,7 @@ dt = .5; %Temporal step size
 tTotal = 200; %total time
 S = 1; %size of geometry - for effective size calculate A*S
 tests = {'Basic MLE'; 'Changing PDE Geometry'; 'Penalty Term'; 'Spatially Dependent Constants'};
-testWhich = [1 2 3 4];
+testWhich = [4];
 
 %% Fake Data
 meshSize = 250;

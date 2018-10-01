@@ -122,7 +122,7 @@ function [ result ,model,dimensions, oldResult, time] = continuumSimulation(R,E,
     
 
     %% Solve
-    result = NaN;
+    result = solvepde(model,[0 dt]);
     i=1;
     while i < 10
         try

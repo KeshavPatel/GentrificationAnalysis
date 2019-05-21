@@ -45,11 +45,15 @@ for R = Rrange
                 tic
                 if ~exist('oldResult','var')
                     fprintf('Using default initial condition\n')
-                    [result,model,d] = continuumSimulation(rho, eta, beta, dt, ...
+                    try
+                        [result,model,d,old,time] = continuumSimulation(rho, eta, beta, dt, ...
                         timeSteps, S, alpha, []);
+                    catch
+                        continue;
+                    end
                 else
                     fprintf('Using old result as initial condition\n')
-                    [result,model,d] = continuumSimulation(rho, eta, beta, dt, ...
+                    [result,model,d,old,time] = continuumSimulation(rho, eta, beta, dt, ...
                         timeSteps, S, alpha, oldResult);
                 end
                 toc
@@ -66,13 +70,22 @@ for R = Rrange
                 %% Compare PDE and data
                 dx = S/250;
                 [meshx, meshy] = meshgrid(linspace(-S/2+dx,S/2-dx,250));
-                Wmesh = interpolateSolution(result,[meshx(:) meshy(:)]', 1, 1:timeSteps);
+                
+                %Interpolate the PDE solution to match the probability map
+                %that contains the wealth and amenity data. Later we will
+                %use this to normalize the solution as well
+                Wmesh = interpolateSolution(result,[meshx(:) meshy(:)]', 1, 1:time);
                 Wmesh(isnan(Wmesh)) = 0;
                 %Wintegral = sum(Wmesh*dx^2);
-                Amesh = interpolateSolution(result,[meshx(:) meshy(:)]', 2, 1:timeSteps);
+                Amesh = interpolateSolution(result,[meshx(:) meshy(:)]', 2, 1:time);
                 Amesh(isnan(Amesh)) = 0;
                 %Aintegral = sum(Amesh*dx^2);
                 
+                %we also need the data from the probability map
+                %Wvalues is the number of times a value has been randomly
+                %sampled
+                %Wintrp is the set of interpolated solutions at the places
+                %the map was sampled
                 mapPosX = linspace(-S/2,S/2,size(Wmap,2));
                 mapPosY = linspace(S/2,-S/2,size(Wmap,1));
                 [nonzeroY, nonzeroX] = find(Wmap~=0);
@@ -82,6 +95,7 @@ for R = Rrange
                 Wintrp = interpolateSolution(result,[queryX; queryY], 1, 1:timeSteps);
                 Wintrp(isnan(Wintrp)) = 0;
                 
+                %Do the same thing for the amenity map
                 mapPosX = linspace(-S/2,S/2,size(Amap,2));
                 mapPosY = linspace(S/2,-S/2,size(Amap,1));
                 [nonzeroY, nonzeroX] = find(Amap~=0);
@@ -91,15 +105,27 @@ for R = Rrange
                 Aintrp = interpolateSolution(result,[queryX; queryY], 2, 1:timeSteps);
                 Aintrp(isnan(Aintrp)) = 0;
                 
-                for j=floor(10/dt):timeSteps
+                %check the solution at each time point and compare to the
+                %data
+                for j=floor(10/dt):time
+                    %normalize PDE solution by dividing by integral
                     Wintegral = sum(sum(dx^2*reshape(Wmesh(:,1,j),[250 250])));
                     Aintegral = sum(sum(dx^2*reshape(Amesh(:,1,j),[250 250])));
                     WintrpTimej = Wintrp(:,1,j)./Wintegral;
                     AintrpTimej = Aintrp(:,1,j)./Aintegral;
+                    
+                    %Use this to compare maps by Least Squares
+                    %(this is just an alternative metric for determining
+                    % how close the solution and data are; this does nothing
+                    % for the algorithm itself)
                     WmeshTimej = reshape(Wmesh(:,1,j)./Wintegral,[250,250]);
                     AmeshTimej = reshape(Amesh(:,1,j)./Aintegral,[250,250]);
+                    
+                    %calculate log likelihood
                     wealthLLF = sum(log(WintrpTimej.^Wvalues));
                     amenLLF = sum(log(AintrpTimej.^Avalues));
+                    
+                    % Check if these values are the new minimum
                     if wealthLLF > wealthMaxLogLikeFunc && amenLLF > amenMaxLogLikeFunc
                         wealthMaxLogLikeFunc = wealthLLF;
                         amenMaxLogLikeFunc = amenLLF;

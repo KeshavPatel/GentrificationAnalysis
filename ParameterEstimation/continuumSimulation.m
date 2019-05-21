@@ -10,9 +10,9 @@ system given in the group. The scripts within this package implement this
 file for each set of variables.
 %}
 
-function [ result ,model,dimensions, oldResult, time] = continuumSimulation(R,E,B, dt,timeSteps,S,A,initialCondition)
+function [ result ,model,dimensions, ICVec, time] = continuumSimulation(R,E,B, dt,...
+    timeSteps,S,A,initialConditionCell)
      %% CONTINUUMSIMULATION executes one run of the PDE system through time (timeSteps-1)*dt
-     
 %      Parameters:
 %      R: rho
 %      E: eta
@@ -98,7 +98,6 @@ function [ result ,model,dimensions, oldResult, time] = continuumSimulation(R,E,
 
     %% Coefficients
     % ccoeff and fcoeff are helper functions defined below.
-    
 
     a = [0 ; 0];
     
@@ -106,31 +105,29 @@ function [ result ,model,dimensions, oldResult, time] = continuumSimulation(R,E,
     cFn = @(region,state) ccoeff(region,state,R,E);
     fFn = @(region,state) fcoeff(region,state,R,A,B);
     
-
     D = [1;1];     % LHS
-    
     specifyCoefficients(model,'m',0,'f',fFn,'a',a,'d',D,'c',cFn);
-    oldResult = NaN;
+
     %% ICs
-    if isempty(initialCondition)
-        oldResult = @IC;
-        setInitialConditions(model,oldResult);
+    if isempty(initialConditionCell)
+        ICVec = @IC;
+        setInitialConditions(model,ICVec);
     else
-        setInitialConditions(model,initialCondition);
+        ICVec = @(locations) ICData(locations, initialConditionCell);
+        setInitialConditions(model,ICVec);
     end
-    %%
-    
 
     %% Solve
     result = solvepde(model,[0 dt]);
+    time = 2;
     i=1;
     while i < 10
         try
             result = solvepde(model,0:dt:((ceil(timeSteps/i)-1)*dt));
-            time = (ceil(timeSteps/i)-1)*dt;
+            time = ceil(timeSteps/i)-1;
             break;
         catch
-            disp('Could not run to completion. Saving less');
+            disp('Could not run to completion');
             i = i+1;
             disp(i)
         end
@@ -153,26 +150,40 @@ fmatrix = zeros(n1,nr);
 for i = 1:nr
     fmatrix(1,i) = alpha(region.x(i),region.y(i)).*(rho(region.x(i),region.y(i)).* ...
         (1-state.u(1,i)).*(state.u(1,i))-state.u(1,i));
-    fmatrix(2,i) = alpha(region.x(i),region.y(i)).*(state.u(1,i)-state.u(2,i)+beta(region.x(i),region.y(i)));
+    fmatrix(2,i) = alpha(region.x(i),region.y(i)).*(state.u(1,i)-state.u(2,i)+...
+        beta(region.x(i),region.y(i)));
 end
 
 end
+
+
+
+function u0 = ICData(locations, initialConditionCell)
+u0 = zeros(2,length(locations.x));
+WIC = initialConditionCell{1};
+AIC = initialConditionCell{2};
+WmaxVal = max(max(WIC));
+AmaxVal = max(max(AIC));
+for i = 1:length(locations.x)
+    u0(1,i) = WIC(1+floor(249*(.5+locations.y(i))), 1+floor(249*(.5+locations.x(i))))/WmaxVal;
+    u0(2,i) = AIC(1+floor(249*(.5+locations.y(i))), 1+floor(249*(.5+locations.x(i))))/AmaxVal;
+end
+end
+
+
 
 function u0 = IC(locations)
 
 % Initial condition
-
-
 u0 = zeros(2,length(locations.x));
 
 %n defines initial condition.
-
 n = 1;
-m = 1;
 
 %   n = 1 is little lumpy sinusoids
 %   n = 2 is Gaussian
 %   n = 3 is random initial data
+%   n = 4 is delta
 %   default is little lumpy sinusoids
 
 %num is the number of little lumpy sinusoids in each direction. Only set up
@@ -180,10 +191,8 @@ m = 1;
 num = 16;
 
 % Leave this
-
 l = max(locations.x)-min(locations.x);
 k = pi*num/l;
-
 
 % c and factor scale the initial conditions.
 c=0.01;
@@ -191,20 +200,9 @@ factor = 1/c*0.2;
 
 switch n
     case 1
-        if m == 1
-            u0(1,:) = c*sin(k*locations.x).*sin(k*locations.y)+factor*c;
-            u0(2,:) = -c.*sin(k*locations.x).*sin(k*locations.y)+factor*c;
-        elseif m == 2
-            u0(1,:) = -c*sin(k*locations.x).*sin(k*locations.y)+factor*c;
-            u0(2,:) = c.*sin(k*locations.x).*sin(k*locations.y)+factor*c;
-        elseif m == 3
-            u0(1,end:-1:1) = c*sin(k*locations.x).*sin(k*locations.y)+factor*c;
-            u0(2,end:-1:1) = -c.*sin(k*locations.x).*sin(k*locations.y)+factor*c;
-        else
-            u0(1,end:-1:1) = -c*sin(k*locations.x).*sin(k*locations.y)+factor*c;
-            u0(2,end:-1:1) = c.*sin(k*locations.x).*sin(k*locations.y)+factor*c;
-        end
-        
+        u0(1,:) = c*sin(k*locations.x).*sin(k*locations.y)+factor*c;
+        u0(2,:) = -c.*sin(k*locations.x).*sin(k*locations.y)+factor*c;
+
     case 2
         u0(1,:) = c*exp(-1*((locations.x).^2+(locations.y).^2));
         u0(2,:) = c*exp(-1*((locations.x).^2+(locations.y).^2));
@@ -212,22 +210,23 @@ switch n
     case 3
         sSize = size(u0);
         u0 = c+factor*c*rand(sSize);
+    case 4
+        u0(1,:) = c*double(abs(locations.x)<.25 & abs(locations.y)<.25);
+        u0(2,:) = c*double(abs(locations.x)<.25 & abs(locations.y)<.25);
         
     otherwise
-        u0(1,:) = c*sin(k*locations.x).*sin(k*locations.y)+factor*c;
-        u0(2,:) =  -c.*sin(k*locations.x).*sin(k*locations.y)+factor*c;
+        u0(1,:) = c*round(sin(k*locations.x).*sin(k*locations.y))+factor*c;
+        u0(2,:) = -c.*round(sin(k*locations.x).*sin(k*locations.y))+factor*c;
         
 end
-
 %u0(:,sqrt(locations.x.^2+locations.y.^2)<=1/10)=factor*c/1.5;
-
 end
+
+
 
 function cmatrix = ccoeff(region,state,~,eta)
 
 % Diffusive terms
-
-
 n1 = 16;
 nr = numel(region.x);
 

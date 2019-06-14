@@ -193,7 +193,7 @@ switch n
         u0(2,:) = -c.*sin(k*locations.x).*sin(k*locations.y)+factor*c;
         
     case 2
-        u0(1,:) = c*exp(-1*((locations.x).^2+(locations.y).^2));
+        u0(1,:) = c*exp(-1*((locations.x+.5).^2+(locations.y+.5).^2));
         u0(2,:) = c*exp(-1*((locations.x).^2+(locations.y).^2));
         
     case 3

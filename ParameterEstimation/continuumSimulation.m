@@ -10,9 +10,9 @@ system given in the group. The scripts within this package implement this
 file for each set of variables.
 %}
 
-function [ result ,model,dimensions, ICVec, time] = continuumSimulation(R,E,B, dt,...
+function [ result ,model,dimensions, ICVec] = continuumSimulation(R,E,B, dt,...
     timeSteps,S,A,initialConditionCell)
-     %% CONTINUUMSIMULATION executes one run of the PDE system through time (timeSteps-1)*dt
+%% CONTINUUMSIMULATION executes one run of the PDE system through time (timeSteps-1)*dt
 %      Parameters:
 %      R: rho
 %      E: eta
@@ -31,109 +31,100 @@ function [ result ,model,dimensions, ICVec, time] = continuumSimulation(R,E,B, d
 %       IC is specified in IC local function (see below).
 
 
-     model = createpde(2);
-    
-     
-    %% create mesh
-    % determine size of space
-    
-    if size(S)==[1 1]
-        SS = [S S];
-    elseif size(S)== [1 2] || size(S)==[2 1]
-        SS = S;
-    else
-        error('Size dimension mismatch')
-    end
-
-    s1 = SS(1)/2;
-    s2 = SS(2)/2;
-    s3 = s1*4/5;
-    s4 = s2*4/5;
-    
-    %For a rectangle, the first row contains 3, and the second row contains 4. 
-    %    The next four rows contain the x-coordinates of the starting points 
-    %    of the edges, and the four rows after that contain the y-coordinates 
-    %    of the starting points of the edges.
-    R1 = [3,4,-s1 s1 s1 -s1 -s2 -s2 s2 s2]';
-    %R2 = [3,4,-s1+.1 -.1 -.1 -s1+.1 .1 .1 s2-.1 s2-.1]';
-    %R1 = [1, 0, 0, s1]';
-    %R2 = [1, 0, 0, s1/5]';
-    gm = [R1];% R2];
-    sf = 'R1';%-R2';
-    ns = char('R1');
-    %ns2 = char('R2');
-    ns = [ns'];% ns2'];
-    
-    %Creates the domain on which the PDE is run. Here, it is a rectangle centered at the origin
-    g = decsg(gm,sf,ns); 
-    geometryFromEdges(model,g);
-    
-    dimensions = [-s1 s1 ; -s2 s2];
-    
-    %% to see geometry
-    %pdegplot(model,'EdgeLabels','on') % 'EdgeLabels' for 2-D
-    
-    %% BCs
-    % default is zero neumann, leave unspecified.
-  
-  
-
-    %% generate mesh
-    hmax = 0.1*max(SS); % max element size. 
-    msh = generateMesh(model,'Hmax',hmax);
-    %figure; 
-    %pdeplot(model); 
-    %axis equal
-    %title 'Plate With Triangular Element Mesh'
-    %xlabel 'X-coordinate, meters'
-    %ylabel 'Y-coordinate, meters'
-    p = msh.Nodes;
-    
-
-    % Set solver options. If you're running into trouble w/R<1, try
-    % decreasing tolerances.
-    model.SolverOptions.RelativeTolerance = 1.0e-3; 
-    model.SolverOptions.AbsoluteTolerance = 1.0e-5;
+model = createpde(2);
 
 
-    %% Coefficients
-    % ccoeff and fcoeff are helper functions defined below.
+%% create mesh
+% determine size of space
 
-    a = [0 ; 0];
-    
-    % RHS
-    cFn = @(region,state) ccoeff(region,state,R,E);
-    fFn = @(region,state) fcoeff(region,state,R,A,B);
-    
-    D = [1;1];     % LHS
-    specifyCoefficients(model,'m',0,'f',fFn,'a',a,'d',D,'c',cFn);
+if size(S)==[1 1]
+    SS = [S S];
+elseif size(S)== [1 2] || size(S)==[2 1]
+    SS = S;
+else
+    error('Size dimension mismatch')
+end
 
-    %% ICs
-    if isempty(initialConditionCell)
-        ICVec = @IC;
-        setInitialConditions(model,ICVec);
-    else
-        ICVec = @(locations) ICData(locations, initialConditionCell);
-        setInitialConditions(model,ICVec);
-    end
+s1 = SS(1)/2;
+s2 = SS(2)/2;
+s3 = s1*4/5;
+s4 = s2*4/5;
 
-    %% Solve
-    result = solvepde(model,[0 dt]);
-    time = 2;
-    i=1;
-    while i < 10
-        try
-            result = solvepde(model,0:dt:((ceil(timeSteps/i)-1)*dt));
-            time = ceil(timeSteps/i)-1;
-            break;
-        catch
-            disp('Could not run to completion');
-            i = i+1;
-            disp(i)
-        end
-    end
-    
-    %% End of main function
+%For a rectangle, the first row contains 3, and the second row contains 4.
+%    The next four rows contain the x-coordinates of the starting points
+%    of the edges, and the four rows after that contain the y-coordinates
+%    of the starting points of the edges.
+R1 = [3,4,-s1 s1 s1 -s1 -s2 -s2 s2 s2]';
+%R2 = [3,4,-s1+.1 -.1 -.1 -s1+.1 .1 .1 s2-.1 s2-.1]';
+%R1 = [1, 0, 0, s1]';
+%R2 = [1, 0, 0, s1/5]';
+gm = [R1];% R2];
+sf = 'R1';%-R2';
+ns = char('R1');
+%ns2 = char('R2');
+ns = [ns'];% ns2'];
+
+%Creates the domain on which the PDE is run. Here, it is a rectangle centered at the origin
+g = decsg(gm,sf,ns);
+geometryFromEdges(model,g);
+
+dimensions = [-s1 s1 ; -s2 s2];
+
+%% to see geometry
+%pdegplot(model,'EdgeLabels','on') % 'EdgeLabels' for 2-D
+
+%% BCs
+% default is zero neumann, leave unspecified.
+
+
+
+%% generate mesh
+hmax = 0.1*max(SS); % max element size.
+msh = generateMesh(model,'Hmax',hmax);
+%figure;
+%pdeplot(model);
+%axis equal
+%title 'Plate With Triangular Element Mesh'
+%xlabel 'X-coordinate, meters'
+%ylabel 'Y-coordinate, meters'
+p = msh.Nodes;
+
+
+% Set solver options. If you're running into trouble w/R<1, try
+% decreasing tolerances.
+model.SolverOptions.RelativeTolerance = 1.0e-3;
+model.SolverOptions.AbsoluteTolerance = 1.0e-5;
+%model.SolverOptions.MinStep = 1e-7;
+%model.SolverOptions.MaxIterations = 5000;
+%model.SolverOptions.ReportStatistics = 'on';
+
+
+%% Coefficients
+% ccoeff and fcoeff are helper functions defined below.
+
+a = [0 ; 0];
+
+% RHS
+cFn = @(region,state) ccoeff(region,state,R,E);
+fFn = @(region,state) fcoeff(region,state,R,A,B);
+
+D = [1;1];     % LHS
+specifyCoefficients(model,'m',0,'f',fFn,'a',a,'d',D,'c',cFn);
+
+%% ICs
+if isempty(initialConditionCell)
+    ICVec = @IC;
+    setInitialConditions(model,ICVec);
+else
+    ICVec = @(locations) ICData(locations, initialConditionCell);
+    setInitialConditions(model,ICVec);
+end
+
+%% Solve
+result = solvepde(model,0:dt:timeSteps);
+
+
+%% End of main function
 end
 
 %% Helper functions
@@ -143,31 +134,25 @@ function fmatrix = fcoeff(region,state,rho,alpha,beta)
 % Everything that does not involve derivatives goes here.
 % u(1,:) is wealth, u(2,:) amenities
 
+
 n1 = 2;
 nr = numel(region.x);
 fmatrix = zeros(n1,nr);
 
-for i = 1:nr
-    fmatrix(1,i) = alpha(region.x(i),region.y(i)).*(rho(region.x(i),region.y(i)).* ...
-        (1-state.u(1,i)).*(state.u(1,i))-state.u(1,i));
-    fmatrix(2,i) = alpha(region.x(i),region.y(i)).*(state.u(1,i)-state.u(2,i)+...
-        beta(region.x(i),region.y(i)));
-end
+fmatrix(1,:) = alpha*(rho.*(1-state.u(1,:)).*(state.u(1,:))-state.u(1,:));
+fmatrix(2,:) = alpha*(state.u(1,:)-state.u(2,:)+beta);
+
 
 end
 
 
 
-function u0 = ICData(locations, initialConditionCell)
-u0 = zeros(2,length(locations.x));
-WIC = initialConditionCell{1};
-AIC = initialConditionCell{2};
-WmaxVal = max(max(WIC));
-AmaxVal = max(max(AIC));
-for i = 1:length(locations.x)
-    u0(1,i) = WIC(1+floor(249*(.5+locations.y(i))), 1+floor(249*(.5+locations.x(i))))/WmaxVal;
-    u0(2,i) = AIC(1+floor(249*(.5+locations.y(i))), 1+floor(249*(.5+locations.x(i))))/AmaxVal;
-end
+function u0 = ICData(locations, result)
+
+u0 = interpolateSolution(result,[locations.x;locations.y],1:2)';
+
+%u0 = 3e-3*(rand(size(u0))-.5)+u0;
+
 end
 
 
@@ -175,15 +160,17 @@ end
 function u0 = IC(locations)
 
 % Initial condition
+
+
 u0 = zeros(2,length(locations.x));
 
 %n defines initial condition.
+
 n = 1;
 
 %   n = 1 is little lumpy sinusoids
 %   n = 2 is Gaussian
 %   n = 3 is random initial data
-%   n = 4 is delta
 %   default is little lumpy sinusoids
 
 %num is the number of little lumpy sinusoids in each direction. Only set up
@@ -191,8 +178,10 @@ n = 1;
 num = 16;
 
 % Leave this
+
 l = max(locations.x)-min(locations.x);
 k = pi*num/l;
+
 
 % c and factor scale the initial conditions.
 c=0.01;
@@ -201,8 +190,8 @@ factor = 1/c*0.2;
 switch n
     case 1
         u0(1,:) = c*sin(k*locations.x).*sin(k*locations.y)+factor*c;
-        u0(2,:) = -c.*sin(k*locations.x).*sin(k*locations.y)+factor*c;
-
+        u0(2,:) =  -c.*sin(k*locations.x).*sin(k*locations.y)+factor*c;
+        
     case 2
         u0(1,:) = c*exp(-1*((locations.x).^2+(locations.y).^2));
         u0(2,:) = c*exp(-1*((locations.x).^2+(locations.y).^2));
@@ -210,16 +199,13 @@ switch n
     case 3
         sSize = size(u0);
         u0 = c+factor*c*rand(sSize);
-    case 4
-        u0(1,:) = c*double(abs(locations.x)<.25 & abs(locations.y)<.25);
-        u0(2,:) = c*double(abs(locations.x)<.25 & abs(locations.y)<.25);
         
     otherwise
-        u0(1,:) = c*round(sin(k*locations.x).*sin(k*locations.y))+factor*c;
-        u0(2,:) = -c.*round(sin(k*locations.x).*sin(k*locations.y))+factor*c;
+        u0(1,:) = c*sin(k*locations.x).*sin(k*locations.y)+factor*c;
+        u0(2,:) =  -c.*sin(k*locations.x).*sin(k*locations.y)+factor*c;
         
 end
-%u0(:,sqrt(locations.x.^2+locations.y.^2)<=1/10)=factor*c/1.5;
+
 end
 
 
@@ -227,19 +213,20 @@ end
 function cmatrix = ccoeff(region,state,~,eta)
 
 % Diffusive terms
+
+
 n1 = 16;
 nr = numel(region.x);
 
 cmatrix = zeros(n1,nr);
 
-for i = 1:nr
-    cmatrix(1,i) = eta(region.x(i),region.y(i));
-    cmatrix(4,i) = eta(region.x(i),region.y(i));
-    
-    cmatrix(9,i) = -2*eta(region.x(i),region.y(i)).*state.u(1,i)./state.u(2,i);
-    cmatrix(12,i) = -2*eta(region.x(i),region.y(i)).*state.u(1,i)./state.u(2,i);
-    
-    cmatrix(13,i) = eta(region.x(i),region.y(i));
-    cmatrix(16,i) = eta(region.x(i),region.y(i));
-end
+cmatrix(1,:) = eta;
+cmatrix(4,:) = eta;
+
+cmatrix(9,:) = -2*eta*state.u(1,:)./state.u(2,:);
+cmatrix(12,:) = -2*eta*state.u(1,:)./state.u(2,:);
+
+cmatrix(13,:) = eta;
+cmatrix(16,:) = eta;
+
 end

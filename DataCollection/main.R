@@ -1,7 +1,7 @@
 #Data Collection Main File
 #Author:        Keshav Patel
 #Advisor:       Nancy Rodriguez
-#Last Modified: 11/30/2018
+#Last Modified: 2/20/2020
 
 #The first time you run this file, this portion checks if you have the necessary R libraries. 
 #    If not, this will download them
@@ -23,13 +23,16 @@ library(purrr)
 
 source("helperFunctions.R")
 
+#Parameters for wealth collection
 stateName = "IL" #2 letter state code
 countyName = "Cook" #County name
-wealthMeasurement = "MedianValue"
+wealthMeasurement = "MedianValue" #just a label
 wealthCutoff = 225900*2 #Set to NA to remove wealth cutoff
 myspan = 5 #number of years to average data over. Use 1, 3, or 5
 myendyearNew = 2018 #Last year over which to average data
-tractCodes= "*"#c(20000:89900, 110000:179900, 190000:259900, 830000:849900) #Set to "*" to include all tracts
+tractCodes= "*"#c(20000:89900, 110000:179900, 190000:259900, 830000:849900) #Set to "*" to include all tracts in the county
+
+#Parameters for amenities collection
 initialLatitude = 42.01251; #Search for amenities begins in top left corner
 initialLongitude = -87.93063
 horizontalLength = 15; #miles
@@ -44,10 +47,11 @@ amenityList = c("seniorcenters", "social_clubs", "localservices")
 shapefile = getBlockGroup(stateName, countyName, myendyearNew, myspan)
 if(class(tractCodes) == "integer")
 {
+  #specific tracts are specified in the parameters, reduce the shapefile to only include those tracts
   shapefile = shapefile[as.numeric(substring(shapefile$GEOID,6,11)) %in% tractCodes,]
 }
 
-#Find centroids of the blockgroups
+#Find centroids of the blockgroups and associate it with the corresponding GEOID
 centers = findCenters(shapefile)
 df_temp1 = geo_join(shapefile, centers, "GEOID", "GEOID")
 
@@ -55,6 +59,7 @@ df_temp1 = geo_join(shapefile, centers, "GEOID", "GEOID")
 wealthPolyFrame = getWealthData(stateName, countyName, myendyearNew, myspan, wealthMeasurement)
 if(class(tractCodes) == "integer")
 {
+  #Remove data for tracts we don't care about
   wealthPolyFrame = wealthPolyFrame[as.numeric(substring(wealthPolyFrame$GEOID,6,11)) %in% tractCodes,]
 }
 
@@ -62,10 +67,15 @@ df_temp2 = geo_join(df_temp1, wealthPolyFrame, "GEOID", "GEOID")
 wealth_df = df_temp2[!is.na(df_temp2[[wealthMeasurement]]),] #If the census does not have any information on a block group, then we ignore the entire entry
 if(!is.na(wealthCutoff))
 {
+  #if a wealth entry does not make the cutoff, remove the lat/lon data so that it does not appear in the Position Map
   #wealth_df = wealth_df[wealth_df[[wealthMeasurement]]>wealthCutoff,]
   wealth_df[wealth_df[[wealthMeasurement]]<wealthCutoff,"latitude"] = NA
   wealth_df[wealth_df[[wealthMeasurement]]<wealthCutoff,"longitude"] = NA
 }
+
+
+
+
 
 #get data from Yelp
 returnList = yelpDataGET(amenityList, initialLatitude, initialLongitude, verticalLength, horizontalLength)

@@ -3,15 +3,14 @@
 Author:         Avishai Halev
 Advisor:        Nancy Rodriguez-Bunn
 Last modified:  Keshav Patel
-Date modified:  09/04/2018
+Date modified:  07/30/2020
 
 This file implements MATLAB's PDE Toolbox package as a solver for the PDE
 system given in the group. The scripts within this package implement this
 file for each set of variables.
 %}
 
-function [result] = continuumSimulation_1D(R,E,B, dt,...
-    timeSteps,S,A,initialConditionCell)
+function [xmesh, result] = continuumSimulation_1D(R,E,B,S,A,meshPoints,initialConditionCell)
 %% CONTINUUMSIMULATION executes one run of the PDE system through time (timeSteps-1)*dt
 %      Parameters:
 %      R: rho
@@ -30,24 +29,36 @@ function [result] = continuumSimulation_1D(R,E,B, dt,...
 %      initialCondition: IC, specified as a PDERESULT or as []. If empty,
 %       IC is specified in IC local function (see below).
 
-%% create mesh
-% determine size of space
+%This for loop functions to decrease the time step if a solution is not found
+for i = 0:2:12 
+    disp(['Timestep = ' num2str(1/10^(i+1))])
+    warning('')
+    
+    %% create mesh
+    % determine size of space
+    xmesh = linspace(-S/2,S/2,meshPoints);
+    xmesh = sort(unique([xmesh linspace(-1/(meshPoints-1),1/(meshPoints-1),51)]));
+    
+    %% BCs
+    bc = @bcfun;
+    
+    %% ICs
+    ic = @(x) icfun(x,initialConditionCell,xmesh);
+    
+    %% PDE to Solve
+    pde = @(x,t,u,dudx) pdefun(x,t,u,dudx,R(x),E(x),B(x),A(x));
+    
+    %% Solve
+    opts = odeset('RelTol',1e-6,'AbsTol',1e-8);
+    result = pdepe(0,pde,ic,bc,xmesh,linspace(0,1,10^(i+1)),opts);
+    [warnMsg, warnId] = lastwarn;
+    if ~isempty(warnMsg)
+        disp('Time Dependent Run Failed! Retrying with finer timestep')
+    else
+        break;
+    end
+end
 
-xmesh = linspace(-S/2,S/2,200);
-
-%% BCs
-% default is zero neumann, leave unspecified.
-
-bc = @bcfun;
-
-%% ICs
-ic = @(x) icfun(x,initialConditionCell,xmesh);
-
-%% PDE to Solve
-pde = @(x,t,u,dudx) pdefun(x,t,u,dudx,R,E,B,A);
-
-%% Solve
-result = pdepe(0,pde,ic,bc,xmesh,linspace(0,timeSteps*dt,timeSteps));
 
 
 %% End of main function
